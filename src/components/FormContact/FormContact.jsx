@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useForm } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
-import { addContact } from 'redux/contactsSlice';
+import { addContacts } from 'redux/contactsOperations';
 
 const FormContact = ({ closeModal }) => {
   const {
@@ -19,7 +19,7 @@ const FormContact = ({ closeModal }) => {
     <form
       className="row g-3"
       onSubmit={handleSubmit(data => {
-        dispatch(addContact(data));
+        dispatch(addContacts(data));
         closeModal();
       })}
     >

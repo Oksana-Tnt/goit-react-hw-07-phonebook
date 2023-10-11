@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, isAnyOf } from '@reduxjs/toolkit';
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { initialState } from './initialState';
@@ -8,14 +8,25 @@ import {
   deleteContacts,
 } from './contactsOperations';
 
-const handlePending = (state)=>{
-  state.status='pending'
+const defaultStatus = {
+  pending: 'pending',
+  fulfilled: 'fulfilled',
+  rejected: 'rejected',
+};
+const customActions = [fetchContacts, addContacts, deleteContacts];
+
+const getCustomActions = status => {
+  return customActions.map(el => el[status]);
+};
+
+const handlePending = state => {
+  state.status = defaultStatus.pending;
 };
 
 const handleRejected = (state, { payload }) => {
-  state.status = 'rejected';
+  state.status = defaultStatus.rejected;
   state.error = payload;
-};  
+};
 
 export const contactsSlice = createSlice({
   name: 'contacts',
@@ -25,70 +36,34 @@ export const contactsSlice = createSlice({
       state.filter = action.payload;
     },
   },
-  extraReducers:
-    // [fetchContacts.pending]: state => {
-    //   state.status = 'pending';
-    // },
-    // [fetchContacts.fulfilled]: (state, { payload }) => {
-    //   state.status = 'fulfilled';
-    //   state.contacts = payload;
-    //   state.error = '';
-    // },
-    // [fetchContacts.rejected]: (state, { payload }) => {
-    //   state.status = 'rejected';
-    //   state.error = payload;
-    // },
-    // [addContacts.pending]: state => {
-    //   state.status = 'pending';
-    // },
-    // [addContacts.fulfilled]: (state, { payload }) => {
-    //   state.status = 'fulfilled';
-    //   state.contacts.unshift(payload);
-    //   state.error = '';
-    // },
-    // [addContacts.rejected]: (state, { payload }) => {
-    //   state.status = 'rejected';
-    //   state.error = payload;
-    // },
-
-    // [deleteContacts.pending]: state => {
-    //   state.status = 'pending';
-    // },
-    // [deleteContacts.fulfilled]: (state, { payload }) => {
-    //   state.status = 'fulfilled';
-    //   state.contacts=state.contacts.filter(contact => contact.id!== payload.id);
-    //   state.error = '';
-    // },
-    // [deleteContacts.rejected]: (state, { payload }) => {
-    //   state.status = 'rejected';
-    //   state.error = payload;
-    // },
-    builder => {
-      builder
-        .addCase(fetchContacts.pending, handlePending)
-        .addCase(fetchContacts.fulfilled, (state, { payload }) => {
-          state.status = 'fulfilled';
-          state.contacts = payload;
-          state.error = '';
-        })
-        .addCase(fetchContacts.rejected, handleRejected)
-        .addCase(addContacts.pending, handlePending)
-        .addCase(addContacts.fulfilled, (state, { payload }) => {
-          state.status = 'fulfilled';
-          state.contacts.unshift(payload);
-          state.error = '';
-        })
-        .addCase(addContacts.rejected, handleRejected)
-        .addCase(deleteContacts.pending, handlePending)
-        .addCase(deleteContacts.fulfilled, (state, { payload }) => {
-          state.status = 'fulfilled';
-          state.contacts = state.contacts.filter(
-            contact => contact.id !== payload.id
-          );
-          state.error = '';
-        })
-        .addCase(deleteContacts.rejected, handleRejected);
-    },
+  extraReducers: builder => {
+    builder
+      .addCase(fetchContacts.fulfilled, (state, { payload }) => {
+        state.status = defaultStatus.fulfilled;
+        state.contacts = payload;
+        state.error = '';
+      })
+      .addCase(addContacts.fulfilled, (state, { payload }) => {
+        state.status = defaultStatus.fulfilled;
+        state.contacts.unshift(payload);
+        state.error = '';
+      })
+      .addCase(deleteContacts.fulfilled, (state, { payload }) => {
+        state.status = defaultStatus.fulfilled;
+        state.contacts = state.contacts.filter(
+          contact => contact.id !== payload.id
+        );
+        state.error = '';
+      })
+      .addMatcher(
+        isAnyOf(...getCustomActions(defaultStatus.pending)),
+        handlePending
+      )
+      .addMatcher(
+        isAnyOf(...getCustomActions(defaultStatus.rejected)),
+        handleRejected
+      );
+  },
 });
 
 const persistConfig = {
@@ -102,5 +77,5 @@ export const contactsReducer = persistReducer(
   contactsSlice.reducer
 );
 
-export const { addContact, deleteContact, filterContacts } =
-  contactsSlice.actions;
+export const { filterContacts } = contactsSlice.actions;
+export const { contactsReduce } = contactsSlice.reducer;
